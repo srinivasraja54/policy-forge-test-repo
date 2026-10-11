@@ -1,0 +1,60 @@
+name: Policy enforcement
+
+# Enforces this repo's own test-registry/ (not policy-forge's real demo
+# registry -- this repo carries a small, self-contained one of its own) on
+# every push, and proposes a verified fix as a PR when a blocking rule is
+# violated.
+#
+# policy-forge is checked out separately purely to install `policyctl` --
+# nothing from its own registry/ is used here.
+#
+# The PR step authenticates with POLICYFORGE_GITHUB_TOKEN (a real PAT, set as
+# a secret on *this* repo), not GitHub's auto-provided token, so it is not
+# subject to the repo setting that blocks Actions from opening PRs with the
+# built-in token -- that restriction only applies to the auto token.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch: {}
+
+jobs:
+  enforce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: target
+
+      - uses: actions/checkout@v4
+        with:
+          repository: srinivasraja54/policy-forge
+          path: policyctl-src
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install policyctl
+        # [github] brings httpx, which remediate.py's --pr path imports --
+        # plain remediate (no --pr) and check need no extra at all.
+        run: pip install -e "./policyctl-src[github]"
+
+      - name: Enforce active policy
+        run: |
+          policyctl check \
+            --registry target/test-registry \
+            --root target \
+            --repo policy-forge-test-repo \
+            --no-record
+
+      - name: Propose a verified fix
+        if: failure()
+        env:
+          POLICYFORGE_GITHUB_TOKEN: ${{ secrets.POLICYFORGE_GITHUB_TOKEN }}
+        run: |
+          policyctl remediate \
+            --registry target/test-registry \
+            --root target \
+            --repo policy-forge-test-repo \
+            --pr

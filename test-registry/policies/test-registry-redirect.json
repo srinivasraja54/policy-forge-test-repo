@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "kind": "policy",
+  "id": "test-registry-redirect",
+  "title": "Dockerfiles must pull through the internal mirror",
+  "status": "active",
+  "severity": "blocking",
+  "source": {
+    "type": "manual",
+    "ref": "ci-self-test-1",
+    "captured_at": "2026-10-11T00:00:00Z"
+  },
+  "rules": [
+    {
+      "id": "registry-redirect",
+      "description": "FROM must resolve through artifactory.corp/docker-remote/, not a public registry.",
+      "detect": {
+        "type": "file_pattern",
+        "globs": ["**/Dockerfile", "**/Dockerfile.*"],
+        "regex": "^FROM\\s+(?!artifactory\\.corp/)"
+      },
+      "autofix": {
+        "type": "prefix_rewrite",
+        "to": "artifactory.corp/docker-remote/"
+      },
+      "verify": "grep -Eq '^FROM artifactory\\.corp/docker-remote/' Dockerfile"
+    }
+  ]
+}

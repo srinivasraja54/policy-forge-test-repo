@@ -1,0 +1,7 @@
+# This repo's own self-test registry -- not policy-forge's real demo registry.
+# path: . because the CI workflow checks this repo out at its own root and
+# runs policyctl against that same checkout.
+repos:
+  - name: policy-forge-test-repo
+    path: .
+    team: test
