@@ -1,1 +1,1 @@
-FROM ubuntu:latest
+FROM artifactory.corp/docker-remote/ubuntu:latest
